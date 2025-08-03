@@ -35,6 +35,32 @@
     <div id="gameContainer">
         <h1>🐯 Tiger Shooter 🎮</h1>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <!-- Key Legend -->
+        <div id="keyLegend" style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.8); border-radius: 10px; color: white; font-family: 'Courier New', monospace;">
+            <h3 style="margin: 0 0 15px 0; color: #ff6b35; text-align: center;">🎮 CONTROLS</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; text-align: left;">
+                <div style="display: flex; align-items: center; margin: 5px 0;">
+                    <span style="background: #ff6b35; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 10px; font-weight: bold;">← →</span>
+                    <span>Move Tiger Left/Right</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 5px 0;">
+                    <span style="background: #ff6b35; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 10px; font-weight: bold;">SPACE</span>
+                    <span>Shoot Tiger Bomb</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 5px 0;">
+                    <span style="background: #ff6b35; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 10px; font-weight: bold;">↑ ↓</span>
+                    <span>Move Tiger Up/Down</span>
+                </div>
+                <div style="display: flex; align-items: center; margin: 5px 0;">
+                    <span style="background: #ff6b35; color: white; padding: 5px 10px; border-radius: 5px; margin-right: 10px; font-weight: bold;">F5</span>
+                    <span>Restart Game</span>
+                </div>
+            </div>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ff6b35; text-align: center; font-size: 14px; color: #ccc;">
+                <strong>🎯 Objective:</strong> Defeat 10 purple demons to win! | <strong>🎵 Audio:</strong> Click to start with sound!
+            </div>
+        </div>
     </div>
 
     <script>
