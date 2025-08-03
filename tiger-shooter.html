@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tiger Shooter - Master Clark's Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        
+        #gameContainer {
+            text-align: center;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #ff6b35;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+        }
+        
+        h1 {
+            color: #ff6b35;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>🐯 Tiger Shooter 🎮</h1>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+        // Audio system setup
+        let audioContext;
+        let backgroundMusicActive = false;
+        let musicStartTime = 0;
+        
+        // Initialize audio context
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("🎵 Audio system initialized!");
+            } catch (e) {
+                console.log("Audio not supported in this browser");
+            }
+        }
+        
+        // Generate thrilling background music
+        function playBackgroundMusic() {
+            if (!audioContext || backgroundMusicActive) return;
+            
+            backgroundMusicActive = true;
+            musicStartTime = audioContext.currentTime;
+            
+            // Create multiple oscillators for rich music
+            const bassOsc = audioContext.createOscillator();
+            const leadOsc = audioContext.createOscillator();
+            const harmonyOsc = audioContext.createOscillator();
+            
+            const bassGain = audioContext.createGain();
+            const leadGain = audioContext.createGain();
+            const harmonyGain = audioContext.createGain();
+            
+            // Connect oscillators to gains
+            bassOsc.connect(bassGain);
+            leadOsc.connect(leadGain);
+            harmonyOsc.connect(harmonyGain);
+            
+            // Connect gains to output
+            bassGain.connect(audioContext.destination);
+            leadGain.connect(audioContext.destination);
+            harmonyGain.connect(audioContext.destination);
+            
+            // Set frequencies for epic game music
+            bassOsc.frequency.setValueAtTime(110, audioContext.currentTime); // A2
+            leadOsc.frequency.setValueAtTime(440, audioContext.currentTime); // A4
+            harmonyOsc.frequency.setValueAtTime(330, audioContext.currentTime); // E4
+            
+            // Set waveforms
+            bassOsc.type = 'sawtooth';
+            leadOsc.type = 'square';
+            harmonyOsc.type = 'triangle';
+            
+            // Set volumes
+            bassGain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            leadGain.gain.setValueAtTime(0.05, audioContext.currentTime);
+            harmonyGain.gain.setValueAtTime(0.03, audioContext.currentTime);
+            
+            // Start oscillators
+            bassOsc.start();
+            leadOsc.start();
+            harmonyOsc.start();
+            
+            // Create music pattern
+            function updateMusic() {
+                if (!backgroundMusicActive) return;
+                
+                const time = audioContext.currentTime - musicStartTime;
+                const beat = Math.floor(time * 2); // 120 BPM
+                
+                // Bass line (thrilling pattern)
+                const bassNotes = [110, 146, 165, 146, 110, 146, 165, 146];
+                const bassFreq = bassNotes[beat % 8];
+                bassOsc.frequency.setValueAtTime(bassFreq, audioContext.currentTime);
+                
+                // Lead melody
+                const leadNotes = [440, 494, 523, 494, 440, 494, 523, 494];
+                const leadFreq = leadNotes[beat % 8];
+                leadOsc.frequency.setValueAtTime(leadFreq, audioContext.currentTime);
+                
+                // Harmony
+                const harmonyNotes = [330, 392, 440, 392, 330, 392, 440, 392];
+                const harmonyFreq = harmonyNotes[beat % 8];
+                harmonyOsc.frequency.setValueAtTime(harmonyFreq, audioContext.currentTime);
+                
+                requestAnimationFrame(updateMusic);
+            }
+            
+            updateMusic();
+            console.log("🎼 Thrilling background music started!");
+        }
+        
+        // Sound effect for shooting
+        function playShootSound() {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.type = 'square';
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+            
+            console.log("🔫 Shoot sound effect!");
+        }
+        
+        // Sound effect for demon explosion
+        function playExplosionSound() {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.type = 'sawtooth';
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+            
+            console.log("💥 Explosion sound effect!");
+        }
+        
+        // Sound effect for victory fireworks
+        function playFireworkSound() {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioContext.currentTime + 0.2);
+            
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+            
+            oscillator.type = 'sine';
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+        
+        // Game setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameRunning = true;
+        let score = 0;
+        let enemiesDefeated = 0;
+        const totalEnemies = 10; // Changed from 30 to 10
+        let shotsFired = 0; // Track total shots for accuracy
+        let gameWon = false; // Track if game is won
+        let victoryBlinkTimer = 0; // For blinking "Victory!" text
+        let endingScreenActive = false; // Track if ending screen is showing
+        
+        // Background change timer
+        let backgroundChangeTimer = 0;
+        const backgroundChangeInterval = 600; // 10 seconds at 60fps
+        let currentBackgroundTheme = 0; // 0 = default, 1 = sunset, 2 = night, 3 = storm
+        
+        // Keyboard input system
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            console.log("Key pressed:", e.key);
+            
+            // Handle spacebar for shooting
+            if (e.key === ' ' && !tigerBomb.spacebarPressed) {
+                tigerBomb.spacebarPressed = true;
+                console.log("Spacebar pressed - shooting tiger!");
+                shootTiger();
+            }
+            
+            // Handle number 5 key for flying
+            if (e.key === '5' && !tigerBomb.fiveKeyPressed) {
+                tigerBomb.fiveKeyPressed = true;
+                tigerBomb.fiveKeyHoldTime = 0;
+                console.log("Number 5 pressed - ready to fly!");
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+            
+            // Handle spacebar release
+            if (e.key === ' ') {
+                tigerBomb.spacebarPressed = false;
+            }
+            
+            // Handle number 5 key release
+            if (e.key === '5') {
+                tigerBomb.fiveKeyPressed = false;
+                tigerBomb.fiveKeyHoldTime = 0;
+            }
+        });
+        
+        // Tiger Bomb (Player) - Bottom left side
+        const tigerBomb = {
+            x: 50,
+            y: 500,  // Bottom of screen
+            width: 60,
+            height: 60,
+            color: '#FF6B35',
+            isFlying: false,
+            velocityY: 0,
+            groundY: 500,
+            fiveKeyPressed: false,
+            fiveKeyHoldTime: 0,
+            wingFlapTime: 0,
+            nickname: "Master Clark",
+            invulnerable: false,
+            invulnerableTime: 0,
+            skyStayTime: 0,
+            maxSkyStayTime: 300 // 5 seconds at 60fps
+        };
+        
+        // Tiger projectiles array
+        const tigers = [];
+        
+        // Demons array for multiple enemies
+        const demons = [];
+        
+        // Explosion effects array
+        const explosions = [];
+        
+        // Demon spawn timer
+        let demonSpawnTimer = 0;
+        const demonSpawnInterval = 300; // 5 seconds at 60fps
+        
+        // Fireworks system
+        const fireworks = [];
+        let fireworksActive = false;
+        
+        // Background elements
+        const clouds = [];
+        const trees = [];
+        let backgroundTime = 0;
+        
+        // Game loop
+        function gameLoop() {
+            if (!gameStarted) {
+                // Show start screen
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBackground();
+                showStartScreen();
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+            
+                    if (!gameRunning) {
+            // Handle victory sequence
+            if (gameWon) {
+                if (endingScreenActive) {
+                    // Show ending screen with blinking Victory!
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    drawBackground();
+                    showGameWon();
+                }
+            } else {
+                // Show game over screen
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBackground();
+                showGameOver();
+            }
+            return;
+        }
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            drawBackground();
+            
+            // Draw characters
+            drawTigerBomb();
+            drawDemons();
+            drawTigers();
+            drawExplosions();
+            drawScore();
+            
+            // Draw fireworks if active
+            if (fireworksActive) {
+                drawFireworks();
+            }
+            
+            // Update game
+            updateGame();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Drawing functions
+        function drawTigerBomb() {
+            // Draw nickname above Tiger Bomb
+            ctx.fillStyle = tigerBomb.invulnerable ? '#FF0000' : '#FF6B35';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(tigerBomb.nickname, tigerBomb.x + tigerBomb.width / 2, tigerBomb.y - 10);
+            ctx.textAlign = 'left';
+            
+            // Visual feedback for invulnerability
+            if (tigerBomb.invulnerable) {
+                ctx.strokeStyle = '#FF0000';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(tigerBomb.x + 30, tigerBomb.y + 30, 35, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // Tiger head (circular)
+            ctx.fillStyle = tigerBomb.color;
+            ctx.beginPath();
+            ctx.arc(tigerBomb.x + 30, tigerBomb.y + 30, 30, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tiger ears
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.arc(tigerBomb.x + 15, tigerBomb.y + 15, 8, 0, Math.PI * 2);
+            ctx.arc(tigerBomb.x + 45, tigerBomb.y + 15, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tiger stripes on head
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(tigerBomb.x + 20, tigerBomb.y + 20);
+            ctx.lineTo(tigerBomb.x + 30, tigerBomb.y + 25);
+            ctx.moveTo(tigerBomb.x + 40, tigerBomb.y + 20);
+            ctx.lineTo(tigerBomb.x + 30, tigerBomb.y + 25);
+            ctx.stroke();
+            
+            // Wings (fluffy and animated)
+            const wingFlap = Math.sin(tigerBomb.wingFlapTime * 0.2) * 3;
+            const wingAngle = tigerBomb.isFlying ? 15 : 5;
+            
+            // Left wing (fluffy)
+            ctx.fillStyle = '#FFD700';
+            ctx.strokeStyle = '#FFA500';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(tigerBomb.x - 15, tigerBomb.y + 20);
+            ctx.lineTo(tigerBomb.x - 25 + wingFlap, tigerBomb.y + 10 + wingAngle);
+            ctx.lineTo(tigerBomb.x - 35 + wingFlap, tigerBomb.y + 5 + wingAngle);
+            ctx.lineTo(tigerBomb.x - 40 + wingFlap, tigerBomb.y + 15 + wingAngle);
+            ctx.lineTo(tigerBomb.x - 35 + wingFlap, tigerBomb.y + 25 + wingAngle);
+            ctx.lineTo(tigerBomb.x - 25 + wingFlap, tigerBomb.y + 30 + wingAngle);
+            ctx.lineTo(tigerBomb.x - 15, tigerBomb.y + 25);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Right wing (fluffy)
+            ctx.beginPath();
+            ctx.moveTo(tigerBomb.x + 75, tigerBomb.y + 20);
+            ctx.lineTo(tigerBomb.x + 85 + wingFlap, tigerBomb.y + 10 + wingAngle);
+            ctx.lineTo(tigerBomb.x + 95 + wingFlap, tigerBomb.y + 5 + wingAngle);
+            ctx.lineTo(tigerBomb.x + 100 + wingFlap, tigerBomb.y + 15 + wingAngle);
+            ctx.lineTo(tigerBomb.x + 95 + wingFlap, tigerBomb.y + 25 + wingAngle);
+            ctx.lineTo(tigerBomb.x + 85 + wingFlap, tigerBomb.y + 30 + wingAngle);
+            ctx.lineTo(tigerBomb.x + 75, tigerBomb.y + 25);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Wing fluff details
+            ctx.fillStyle = '#FFA500';
+            ctx.beginPath();
+            ctx.arc(tigerBomb.x - 30 + wingFlap, tigerBomb.y + 15 + wingAngle, 3, 0, Math.PI * 2);
+            ctx.arc(tigerBomb.x + 90 + wingFlap, tigerBomb.y + 15 + wingAngle, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Tiger face features
+            // Eyes with shine
+            ctx.fillStyle = 'black';
+            ctx.fillRect(tigerBomb.x + 20, tigerBomb.y + 25, 6, 6);
+            ctx.fillRect(tigerBomb.x + 34, tigerBomb.y + 25, 6, 6);
+            
+            // Eye shine
+            ctx.fillStyle = 'white';
+            ctx.fillRect(tigerBomb.x + 22, tigerBomb.y + 27, 2, 2);
+            ctx.fillRect(tigerBomb.x + 36, tigerBomb.y + 27, 2, 2);
+            
+            // Nose
+            ctx.fillStyle = '#FF69B4';
+            ctx.beginPath();
+            ctx.arc(tigerBomb.x + 30, tigerBomb.y + 35, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Mouth
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(tigerBomb.x + 30, tigerBomb.y + 40, 5, 0, Math.PI);
+            ctx.stroke();
+            
+            // Whiskers
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Left whiskers
+            ctx.moveTo(tigerBomb.x + 15, tigerBomb.y + 35);
+            ctx.lineTo(tigerBomb.x + 5, tigerBomb.y + 33);
+            ctx.moveTo(tigerBomb.x + 15, tigerBomb.y + 37);
+            ctx.lineTo(tigerBomb.x + 5, tigerBomb.y + 37);
+            // Right whiskers
+            ctx.moveTo(tigerBomb.x + 45, tigerBomb.y + 35);
+            ctx.lineTo(tigerBomb.x + 55, tigerBomb.y + 33);
+            ctx.moveTo(tigerBomb.x + 45, tigerBomb.y + 37);
+            ctx.lineTo(tigerBomb.x + 55, tigerBomb.y + 37);
+            ctx.stroke();
+        }
+        
+        function drawDemons() {
+            demons.forEach(demon => {
+                if (!demon.isAlive) return;
+                
+                // Body with rounded corners
+                ctx.fillStyle = demon.color;
+                ctx.beginPath();
+                ctx.roundRect(demon.x, demon.y, demon.width, demon.height, 6);
+                ctx.fill();
+                
+                // Demon aura/glow (purple theme)
+                ctx.strokeStyle = '#9370DB';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(demon.x + 25, demon.y + 35, 30, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Angry face (more detailed)
+                // Angry eyes with glow
+                ctx.fillStyle = '#FF0000';
+                ctx.fillRect(demon.x + 12, demon.y + 12, 10, 6);
+                ctx.fillRect(demon.x + 28, demon.y + 12, 10, 6);
+                
+                // Eye glow (purple theme)
+                ctx.fillStyle = '#9370DB';
+                ctx.fillRect(demon.x + 14, demon.y + 14, 3, 2);
+                ctx.fillRect(demon.x + 30, demon.y + 14, 3, 2);
+                
+                // Angry eyebrows (more dramatic)
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                // Left eyebrow (slanted down)
+                ctx.moveTo(demon.x + 10, demon.y + 10);
+                ctx.lineTo(demon.x + 20, demon.y + 5);
+                // Right eyebrow (slanted down)
+                ctx.moveTo(demon.x + 30, demon.y + 5);
+                ctx.lineTo(demon.x + 40, demon.y + 10);
+                ctx.stroke();
+                
+                // Angry mouth (more dramatic)
+                ctx.beginPath();
+                ctx.arc(demon.x + 25, demon.y + 40, 8, Math.PI, Math.PI * 2);
+                ctx.stroke();
+                
+                // Sharp teeth
+                ctx.fillStyle = '#FFF';
+                ctx.fillRect(demon.x + 22, demon.y + 38, 2, 4);
+                ctx.fillRect(demon.x + 26, demon.y + 38, 2, 4);
+                
+                // Horns on top (more detailed) - purple theme
+                ctx.fillStyle = '#4B0082';
+                ctx.strokeStyle = '#8A2BE2';
+                ctx.lineWidth = 2;
+                
+                // Left horn
+                ctx.beginPath();
+                ctx.moveTo(demon.x + 12, demon.y);
+                ctx.lineTo(demon.x + 18, demon.y - 25);
+                ctx.lineTo(demon.x + 22, demon.y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                // Right horn
+                ctx.beginPath();
+                ctx.moveTo(demon.x + 28, demon.y);
+                ctx.lineTo(demon.x + 32, demon.y - 25);
+                ctx.lineTo(demon.x + 38, demon.y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+        
+        function drawScore() {
+            ctx.fillStyle = '#FF6B35';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+            ctx.fillText(`Enemies: ${enemiesDefeated}/${totalEnemies}`, 10, 60);
+            
+            // Display accuracy rate during gameplay
+            const accuracyRate = shotsFired > 0 ? Math.round((enemiesDefeated / shotsFired) * 100) : 100;
+            ctx.fillText(`Accuracy: ${accuracyRate}%`, 10, 90);
+        }
+        
+        function updateGame() {
+            // Update Tiger Bomb movement
+            updateTigerBomb();
+            
+            // Update tigers
+            updateTigers();
+            
+            // Update demons
+            updateDemons();
+            
+            // Spawn new demons
+            spawnDemons();
+            
+            // Update background
+            updateBackground();
+            
+            // Update background theme every 10 seconds
+            backgroundChangeTimer++;
+            if (backgroundChangeTimer >= backgroundChangeInterval) {
+                backgroundChangeTimer = 0;
+                currentBackgroundTheme = (currentBackgroundTheme + 1) % 4; // Cycle through 4 themes
+                console.log(`🌅 Background changed to theme ${currentBackgroundTheme}!`);
+            }
+            
+            // Update fireworks
+            updateFireworks();
+            
+            // Update explosions
+            updateExplosions();
+            
+            // Check collisions
+            checkCollisions();
+        }
+        
+        function updateTigerBomb() {
+            // Left/right movement
+            if (keys['ArrowLeft'] && tigerBomb.x > 0) {
+                tigerBomb.x -= 5;
+            }
+            if (keys['ArrowRight'] && tigerBomb.x < canvas.width - tigerBomb.width) {
+                tigerBomb.x += 5;
+            }
+            
+            // Handle number 5 key hold for flying
+            if (keys['5'] && tigerBomb.fiveKeyPressed) {
+                tigerBomb.fiveKeyHoldTime++;
+                
+                // After holding for 10 frames, start flying
+                if (tigerBomb.fiveKeyHoldTime > 10 && !tigerBomb.isFlying) {
+                    tigerBomb.velocityY = -12;
+                    tigerBomb.isFlying = true;
+                    tigerBomb.skyStayTime = 0;
+                    console.log("Tiger Bomb is flying! 🦋");
+                }
+                
+                // Continue flying while holding (up to 5 seconds)
+                if (tigerBomb.isFlying && tigerBomb.skyStayTime < tigerBomb.maxSkyStayTime) {
+                    tigerBomb.velocityY = -8; // Gentle upward force
+                    tigerBomb.skyStayTime++;
+                }
+            }
+            
+            // Update wing animation
+            tigerBomb.wingFlapTime++;
+            
+            // Update invulnerability
+            if (tigerBomb.invulnerable) {
+                tigerBomb.invulnerableTime++;
+                if (tigerBomb.invulnerableTime > 120) { // 2 seconds at 60fps
+                    tigerBomb.invulnerable = false;
+                    tigerBomb.invulnerableTime = 0;
+                }
+            }
+            
+            // Gravity
+            tigerBomb.velocityY += 0.8;
+            tigerBomb.y += tigerBomb.velocityY;
+            
+            // Ground check
+            if (tigerBomb.y > tigerBomb.groundY) {
+                tigerBomb.y = tigerBomb.groundY;
+                tigerBomb.velocityY = 0;
+                tigerBomb.isFlying = false;
+                tigerBomb.skyStayTime = 0;
+            }
+        }
+        
+        function shootTiger() {
+            // Play shooting sound effect
+            playShootSound();
+            
+            // Track shots fired for accuracy calculation
+            shotsFired++;
+            
+            // Determine shooting direction based on Tiger Bomb's position and flying state
+            let angle = 0; // Default horizontal
+            let speedX = 8;
+            let speedY = 0;
+            
+            if (tigerBomb.isFlying) {
+                // When flying, shoot at various angles including downward
+                const angleVariations = [-45, -30, -15, 0, 15, 30, 45, 60, 75, 90];
+                angle = angleVariations[Math.floor(Math.random() * angleVariations.length)];
+                
+                // Convert angle to radians and calculate speed components
+                const angleRad = angle * Math.PI / 180;
+                speedX = 8 * Math.cos(angleRad);
+                speedY = -8 * Math.sin(angleRad);
+                
+                console.log(`🎯 Flying shot at angle: ${angle}°`);
+            } else {
+                // Ground shooting - horizontal with slight variations
+                const groundAngles = [-15, 0, 15];
+                angle = groundAngles[Math.floor(Math.random() * groundAngles.length)];
+                
+                const angleRad = angle * Math.PI / 180;
+                speedX = 8 * Math.cos(angleRad);
+                speedY = -8 * Math.sin(angleRad);
+            }
+            
+            const tiger = {
+                x: tigerBomb.x + tigerBomb.width,
+                y: tigerBomb.y + tigerBomb.height / 2,
+                width: 25,
+                height: 15,
+                speedX: speedX,
+                speedY: speedY,
+                color: '#FF8C00'
+            };
+            tigers.push(tiger);
+        }
+        
+        function drawTigers() {
+            tigers.forEach(tiger => {
+                // Tiger body
+                ctx.fillStyle = tiger.color;
+                ctx.fillRect(tiger.x, tiger.y, tiger.width, tiger.height);
+                
+                // Tiger stripes
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(tiger.x + 5, tiger.y + 3);
+                ctx.lineTo(tiger.x + 12, tiger.y + 7);
+                ctx.moveTo(tiger.x + 15, tiger.y + 3);
+                ctx.lineTo(tiger.x + 22, tiger.y + 7);
+                ctx.stroke();
+                
+                // Tiger face
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(tiger.x + 2, tiger.y + 5, 8, 6);
+                
+                // Eyes
+                ctx.fillStyle = 'black';
+                ctx.fillRect(tiger.x + 4, tiger.y + 6, 2, 2);
+                ctx.fillRect(tiger.x + 8, tiger.y + 6, 2, 2);
+            });
+        }
+        
+        function updateTigers() {
+            tigers.forEach((tiger, index) => {
+                tiger.x += tiger.speedX;
+                tiger.y += tiger.speedY;
+                
+                // Remove tigers that go off screen
+                if (tiger.x > canvas.width + 50 || tiger.x < -50 || 
+                    tiger.y > canvas.height + 50 || tiger.y < -50) {
+                    tigers.splice(index, 1);
+                }
+            });
+        }
+        
+        function updateDemons() {
+            demons.forEach((demon, index) => {
+                if (demon.isAlive) {
+                    demon.x += demon.speed;
+                    
+                    // Remove demons that go off screen
+                    if (demon.x < -50) {
+                        demons.splice(index, 1);
+                    }
+                }
+            });
+        }
+        
+        function spawnDemons() {
+            demonSpawnTimer++;
+            
+            if (demonSpawnTimer >= demonSpawnInterval) {
+                // Spawn 2-3 demons randomly at different heights
+                const spawnCount = Math.floor(Math.random() * 2) + 2; // 2 or 3
+                
+                for (let i = 0; i < spawnCount; i++) {
+                    // Random height from top to bottom of screen
+                    const randomY = Math.random() * (canvas.height - 100) + 50; // 50 to 550
+                    
+                    const demon = {
+                        x: 750 + (i * 100), // Spawn with spacing
+                        y: randomY,
+                        width: 50,
+                        height: 70,
+                        color: '#8A2BE2', // Purple demons
+                        speed: -2,
+                        isAlive: true,
+                        health: 1
+                    };
+                    demons.push(demon);
+                }
+                
+                console.log(`👹 Spawned ${spawnCount} demons at different heights!`);
+                demonSpawnTimer = 0;
+            }
+        }
+        
+        function checkCollisions() {
+            // Check tiger projectiles hitting demons
+            tigers.forEach((tiger, tIndex) => {
+                demons.forEach((demon, dIndex) => {
+                    if (demon.isAlive &&
+                        tiger.x < demon.x + demon.width &&
+                        tiger.x + tiger.width > demon.x &&
+                        tiger.y < demon.y + demon.height &&
+                        tiger.y + tiger.height > demon.y) {
+                        
+                        // Tiger hit the demon!
+                        console.log("💥 Tiger hit the Demon! +5 points!");
+                        score += 5;
+                        enemiesDefeated++;
+                        
+                        // Remove the tiger
+                        tigers.splice(tIndex, 1);
+                        
+                        // Defeat the demon
+                        demon.isAlive = false;
+                        createExplosion(demon.x + demon.width / 2, demon.y + demon.height / 2);
+                        
+                        // Check if all enemies are defeated
+                        if (enemiesDefeated >= totalEnemies && !gameWon) {
+                            console.log("🎉 All enemies defeated! Game won!");
+                            gameWon = true;
+                            gameRunning = false;
+                            startVictorySequence();
+                        }
+                    }
+                });
+            });
+            
+            // Check if Tiger Bomb touches any demon (damage system)
+            demons.forEach(demon => {
+                if (demon.isAlive && !tigerBomb.invulnerable &&
+                    tigerBomb.x < demon.x + demon.width &&
+                    tigerBomb.x + tigerBomb.width > demon.x &&
+                    tigerBomb.y < demon.y + demon.height &&
+                    tigerBomb.y + tigerBomb.height > demon.y) {
+                    
+                    console.log("💀 Tiger Bomb touched the Demon! -10 points!");
+                    score = Math.max(0, score - 10); // Lose 10 points, minimum 0
+                    tigerBomb.invulnerable = true;
+                    tigerBomb.invulnerableTime = 0;
+                    
+                    // Check if score reaches 0 (game over)
+                    if (score <= 0) {
+                        console.log("💀 No more points! Game Over!");
+                        gameRunning = false;
+                        showGameOver();
+                        return; // Stop further processing
+                    }
+                }
+            });
+        }
+        
+        function showGameOver() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#FF0000';
+            ctx.font = '48px Arial';
+            ctx.fillText('GAME OVER!', 250, 250);
+            
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Final Score: ${score}`, 300, 300);
+            ctx.fillText('Press F5 to restart', 280, 350);
+        }
+        
+        function startVictorySequence() {
+            // Skip fireworks and show ending screen immediately
+            endingScreenActive = true;
+            console.log("🏆 Victory achieved! Showing ending screen immediately!");
+        }
+        
+        function showGameWon() {
+            // Calculate accuracy rate
+            const accuracyRate = shotsFired > 0 ? Math.round((enemiesDefeated / shotsFired) * 100) : 100;
+            
+            // Draw ending screen background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Blinking "Victory!" text
+            victoryBlinkTimer++;
+            if (victoryBlinkTimer < 30) { // Blink every 30 frames (0.5 seconds)
+                ctx.fillStyle = '#00FF00';
+                ctx.font = 'bold 48px Arial';
+                ctx.fillText('Victory!', 300, 200);
+            } else if (victoryBlinkTimer < 60) {
+                // Text is invisible during this period
+            } else {
+                victoryBlinkTimer = 0; // Reset timer
+            }
+            
+            // Master Clark message
+            ctx.fillStyle = '#FFD700';
+            ctx.font = 'bold 32px Arial';
+            ctx.fillText('Master Clark. You are awesome!', 200, 280);
+            
+            // Score and accuracy
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '24px Arial';
+            ctx.fillText(`Final Score: ${score}`, 300, 320);
+            ctx.fillText(`Accuracy Rate: ${accuracyRate}%`, 300, 350);
+            ctx.fillText(`Demons Defeated: ${enemiesDefeated}/${totalEnemies}`, 300, 380);
+            ctx.fillText('🏆 Victory Achieved! 🏆', 250, 420);
+        }
+        
+        function startFireworks() {
+            fireworksActive = true;
+            console.log("🎆 Fireworks celebration started!");
+            
+            // Create initial fireworks (more fireworks for better celebration)
+            for (let i = 0; i < 12; i++) {
+                setTimeout(() => {
+                    createFirework();
+                }, i * 200); // Stagger fireworks
+            }
+            
+            // Continue creating fireworks
+            setInterval(() => {
+                if (fireworksActive) {
+                    createFirework();
+                }
+            }, 500);
+        }
+        
+        function createFirework() {
+            // Play firework sound effect
+            playFireworkSound();
+            
+            const firework = {
+                x: Math.random() * canvas.width,
+                y: canvas.height,
+                targetY: Math.random() * (canvas.height * 0.7),
+                speed: 3 + Math.random() * 2,
+                particles: [],
+                exploded: false,
+                color: `hsl(${Math.random() * 360}, 100%, 50%)`
+            };
+            fireworks.push(firework);
+            console.log("🎆 New firework created!");
+        }
+        
+        function updateFireworks() {
+            if (!fireworksActive) return;
+            
+            // Update existing fireworks
+            fireworks.forEach((firework, index) => {
+                if (!firework.exploded) {
+                    // Move firework up
+                    firework.y -= firework.speed;
+                    
+                    // Check if firework reached target
+                    if (firework.y <= firework.targetY) {
+                        firework.exploded = true;
+                        createFireworkExplosion(firework);
+                    }
+                } else {
+                    // Update particles
+                    firework.particles.forEach((particle, pIndex) => {
+                        particle.x += particle.vx;
+                        particle.y += particle.vy;
+                        particle.vy += 0.1; // Gravity
+                        particle.life--;
+                        
+                        // Remove dead particles
+                        if (particle.life <= 0) {
+                            firework.particles.splice(pIndex, 1);
+                        }
+                    });
+                    
+                    // Remove firework if all particles are gone
+                    if (firework.particles.length === 0) {
+                        fireworks.splice(index, 1);
+                        
+                        // Create new firework
+                        if (Math.random() < 0.3) {
+                            createFirework();
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createFireworkExplosion(firework) {
+            const particleCount = 30 + Math.floor(Math.random() * 20);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const speed = 2 + Math.random() * 3;
+                
+                const particle = {
+                    x: firework.x,
+                    y: firework.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 60 + Math.floor(Math.random() * 30),
+                    color: firework.color
+                };
+                
+                firework.particles.push(particle);
+            }
+        }
+        
+        function drawFireworks() {
+            fireworks.forEach(firework => {
+                if (!firework.exploded) {
+                    // Draw firework rocket
+                    ctx.fillStyle = firework.color;
+                    ctx.beginPath();
+                    ctx.arc(firework.x, firework.y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw trail
+                    ctx.strokeStyle = firework.color;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(firework.x, firework.y);
+                    ctx.lineTo(firework.x, firework.y + 10);
+                    ctx.stroke();
+                } else {
+                    // Draw explosion particles
+                    firework.particles.forEach(particle => {
+                        const alpha = particle.life / 90;
+                        ctx.fillStyle = `rgba(${particle.color}, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
+            });
+        }
+        
+        function createExplosion(x, y) {
+            // Play explosion sound effect
+            playExplosionSound();
+            
+            const explosion = {
+                x: x,
+                y: y,
+                particles: [],
+                life: 60, // 1 second at 60fps
+                maxLife: 60
+            };
+            
+            // Create explosion particles
+            const particleCount = 25 + Math.floor(Math.random() * 15);
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const speed = 3 + Math.random() * 4;
+                const size = 2 + Math.random() * 3;
+                
+                const particle = {
+                    x: x + Math.random() * 20 - 10,
+                    y: y + Math.random() * 20 - 10,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    size: size,
+                    life: 30 + Math.floor(Math.random() * 30),
+                    maxLife: 60,
+                    color: `hsl(${Math.random() * 60 + 10}, 100%, ${50 + Math.random() * 20}%)` // Orange to red
+                };
+                
+                explosion.particles.push(particle);
+            }
+            
+            explosions.push(explosion);
+            console.log("💥 Demon explosion created!");
+        }
+        
+        function updateExplosions() {
+            explosions.forEach((explosion, index) => {
+                explosion.life--;
+                
+                // Update particles
+                explosion.particles.forEach((particle, pIndex) => {
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.vy += 0.2; // Gravity
+                    particle.life--;
+                    
+                    // Remove dead particles
+                    if (particle.life <= 0) {
+                        explosion.particles.splice(pIndex, 1);
+                    }
+                });
+                
+                // Remove explosion if life is over or all particles are gone
+                if (explosion.life <= 0 || explosion.particles.length === 0) {
+                    explosions.splice(index, 1);
+                }
+            });
+        }
+        
+        function drawExplosions() {
+            explosions.forEach(explosion => {
+                explosion.particles.forEach(particle => {
+                    const alpha = particle.life / particle.maxLife;
+                    const size = particle.size * (particle.life / particle.maxLife);
+                    
+                    // Glow effect
+                    ctx.shadowColor = particle.color;
+                    ctx.shadowBlur = 10;
+                    
+                    ctx.fillStyle = particle.color;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Reset shadow
+                    ctx.shadowBlur = 0;
+                });
+            });
+        }
+        
+        // Background functions
+        function drawBackground() {
+            // Enhanced sky gradient with different themes
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            
+            if (currentBackgroundTheme === 0) {
+                // Default theme - Day
+                gradient.addColorStop(0, '#87CEEB'); // Light blue sky
+                gradient.addColorStop(0.3, '#B0E0E6'); // Lighter blue
+                gradient.addColorStop(0.6, '#98FB98'); // Light green
+                gradient.addColorStop(0.8, '#90EE90'); // Medium green
+                gradient.addColorStop(1, '#228B22'); // Forest green ground
+            } else if (currentBackgroundTheme === 1) {
+                // Sunset theme
+                gradient.addColorStop(0, '#FF6B35'); // Orange sky
+                gradient.addColorStop(0.3, '#FF8C42'); // Light orange
+                gradient.addColorStop(0.6, '#FFA07A'); // Light salmon
+                gradient.addColorStop(0.8, '#DDA0DD'); // Plum
+                gradient.addColorStop(1, '#8B4513'); // Saddle brown ground
+            } else if (currentBackgroundTheme === 2) {
+                // Night theme
+                gradient.addColorStop(0, '#191970'); // Midnight blue
+                gradient.addColorStop(0.3, '#483D8B'); // Dark slate blue
+                gradient.addColorStop(0.6, '#2F4F4F'); // Dark slate gray
+                gradient.addColorStop(0.8, '#556B2F'); // Dark olive green
+                gradient.addColorStop(1, '#2F4F2F'); // Dark green ground
+            } else if (currentBackgroundTheme === 3) {
+                // Storm theme
+                gradient.addColorStop(0, '#696969'); // Dim gray
+                gradient.addColorStop(0.3, '#808080'); // Gray
+                gradient.addColorStop(0.6, '#A9A9A9'); // Dark gray
+                gradient.addColorStop(0.8, '#708090'); // Slate gray
+                gradient.addColorStop(1, '#556B2F'); // Dark olive green ground
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Add atmospheric haze effect
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height * 0.3);
+            
+            // Draw mountains
+            drawMountains();
+            
+            // Draw clouds
+            drawClouds();
+            
+            // Draw trees
+            drawTrees();
+        }
+        
+        function drawMountains() {
+            // Far mountains (darker, more distant)
+            ctx.fillStyle = '#4A4A4A';
+            ctx.beginPath();
+            ctx.moveTo(0, 450);
+            ctx.lineTo(150, 380);
+            ctx.lineTo(250, 420);
+            ctx.lineTo(350, 360);
+            ctx.lineTo(450, 400);
+            ctx.lineTo(550, 350);
+            ctx.lineTo(650, 390);
+            ctx.lineTo(750, 340);
+            ctx.lineTo(800, 380);
+            ctx.lineTo(800, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Middle mountains (medium tone)
+            ctx.fillStyle = '#6B6B6B';
+            ctx.beginPath();
+            ctx.moveTo(0, 420);
+            ctx.lineTo(100, 350);
+            ctx.lineTo(200, 380);
+            ctx.lineTo(300, 320);
+            ctx.lineTo(400, 360);
+            ctx.lineTo(500, 300);
+            ctx.lineTo(600, 340);
+            ctx.lineTo(700, 290);
+            ctx.lineTo(800, 330);
+            ctx.lineTo(800, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Close mountains (lighter, more detailed)
+            ctx.fillStyle = '#8B4513';
+            ctx.beginPath();
+            ctx.moveTo(0, 400);
+            ctx.lineTo(100, 300);
+            ctx.lineTo(200, 350);
+            ctx.lineTo(300, 250);
+            ctx.lineTo(400, 320);
+            ctx.lineTo(500, 280);
+            ctx.lineTo(600, 340);
+            ctx.lineTo(700, 290);
+            ctx.lineTo(800, 350);
+            ctx.lineTo(800, 600);
+            ctx.lineTo(0, 600);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Add mountain details and shadows
+            ctx.fillStyle = '#654321';
+            ctx.beginPath();
+            ctx.moveTo(280, 260);
+            ctx.lineTo(320, 250);
+            ctx.lineTo(300, 240);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(480, 290);
+            ctx.lineTo(520, 280);
+            ctx.lineTo(500, 270);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(680, 300);
+            ctx.lineTo(720, 290);
+            ctx.lineTo(700, 280);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Extensive snow coverage on all mountain peaks
+            ctx.fillStyle = '#FFFFFF';
+            
+            // Main peak snow caps (larger and more extensive)
+            ctx.beginPath();
+            ctx.moveTo(270, 260);
+            ctx.lineTo(330, 250);
+            ctx.lineTo(300, 230);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(470, 290);
+            ctx.lineTo(530, 280);
+            ctx.lineTo(500, 260);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(670, 300);
+            ctx.lineTo(730, 290);
+            ctx.lineTo(700, 270);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Additional snow patches on mountain slopes
+            ctx.beginPath();
+            ctx.moveTo(50, 380);
+            ctx.lineTo(80, 370);
+            ctx.lineTo(65, 360);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(150, 360);
+            ctx.lineTo(180, 350);
+            ctx.lineTo(165, 340);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(250, 340);
+            ctx.lineTo(280, 330);
+            ctx.lineTo(265, 320);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(350, 320);
+            ctx.lineTo(380, 310);
+            ctx.lineTo(365, 300);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(450, 300);
+            ctx.lineTo(480, 290);
+            ctx.lineTo(465, 280);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(550, 280);
+            ctx.lineTo(580, 270);
+            ctx.lineTo(565, 260);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(650, 260);
+            ctx.lineTo(680, 250);
+            ctx.lineTo(665, 240);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(750, 240);
+            ctx.lineTo(780, 230);
+            ctx.lineTo(765, 220);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Add mountain ridges and details
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(50, 380);
+            ctx.lineTo(80, 370);
+            ctx.moveTo(150, 360);
+            ctx.lineTo(180, 350);
+            ctx.moveTo(250, 340);
+            ctx.lineTo(280, 330);
+            ctx.moveTo(350, 320);
+            ctx.lineTo(380, 310);
+            ctx.moveTo(450, 300);
+            ctx.lineTo(480, 290);
+            ctx.moveTo(550, 280);
+            ctx.lineTo(580, 270);
+            ctx.moveTo(650, 260);
+            ctx.lineTo(680, 250);
+            ctx.moveTo(750, 240);
+            ctx.lineTo(780, 230);
+            ctx.stroke();
+        }
+        
+        function drawClouds() {
+            clouds.forEach(cloud => {
+                // Main cloud body with gradient
+                const cloudGradient = ctx.createRadialGradient(
+                    cloud.x + 25, cloud.y, 0,
+                    cloud.x + 25, cloud.y, 30
+                );
+                cloudGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                cloudGradient.addColorStop(1, 'rgba(255, 255, 255, 0.6)');
+                
+                ctx.fillStyle = cloudGradient;
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, 20, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 25, cloud.y, 25, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 50, cloud.y, 20, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 25, cloud.y - 15, 15, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 10, cloud.y + 10, 12, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 40, cloud.y + 10, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Cloud shadow/depth
+                ctx.fillStyle = 'rgba(200, 200, 200, 0.3)';
+                ctx.beginPath();
+                ctx.arc(cloud.x + 5, cloud.y + 5, 15, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 30, cloud.y + 5, 20, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 55, cloud.y + 5, 15, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        
+        function drawTrees() {
+            trees.forEach(tree => {
+                // Tree trunk with gradient
+                const trunkGradient = ctx.createLinearGradient(tree.x, tree.y + 20, tree.x + 8, tree.y + 50);
+                trunkGradient.addColorStop(0, '#8B4513');
+                trunkGradient.addColorStop(1, '#654321');
+                
+                ctx.fillStyle = trunkGradient;
+                ctx.fillRect(tree.x, tree.y + 20, 8, 30);
+                
+                // Tree trunk shadow
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(tree.x + 1, tree.y + 21, 6, 28);
+                
+                // Tree leaves with multiple layers for depth
+                // Bottom layer (darker)
+                ctx.fillStyle = '#006400';
+                ctx.beginPath();
+                ctx.moveTo(tree.x - 18, tree.y + 25);
+                ctx.lineTo(tree.x + 26, tree.y + 25);
+                ctx.lineTo(tree.x + 4, tree.y - 15);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Middle layer
+                ctx.fillStyle = '#228B22';
+                ctx.beginPath();
+                ctx.moveTo(tree.x - 15, tree.y + 20);
+                ctx.lineTo(tree.x + 23, tree.y + 20);
+                ctx.lineTo(tree.x + 4, tree.y - 10);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Top layer (lighter)
+                ctx.fillStyle = '#32CD32';
+                ctx.beginPath();
+                ctx.moveTo(tree.x - 12, tree.y + 15);
+                ctx.lineTo(tree.x + 20, tree.y + 15);
+                ctx.lineTo(tree.x + 4, tree.y - 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Tree highlights
+                ctx.fillStyle = '#90EE90';
+                ctx.beginPath();
+                ctx.moveTo(tree.x - 8, tree.y + 12);
+                ctx.lineTo(tree.x + 16, tree.y + 12);
+                ctx.lineTo(tree.x + 4, tree.y - 2);
+                ctx.closePath();
+                ctx.fill();
+            });
+        }
+        
+        function updateBackground() {
+            backgroundTime++;
+            
+            // Create clouds every 200 frames
+            if (backgroundTime % 200 === 0) {
+                clouds.push({
+                    x: canvas.width + 50,
+                    y: Math.random() * 150 + 50,
+                    speed: 0.5 + Math.random() * 0.5
+                });
+            }
+            
+            // Update clouds
+            clouds.forEach((cloud, index) => {
+                cloud.x -= cloud.speed;
+                if (cloud.x < -100) {
+                    clouds.splice(index, 1);
+                }
+            });
+            
+            // Create trees every 300 frames
+            if (backgroundTime % 300 === 0) {
+                trees.push({
+                    x: Math.random() * canvas.width,
+                    y: 450 + Math.random() * 50
+                });
+            }
+            
+            // Remove old trees (keep only 10)
+            if (trees.length > 10) {
+                trees.shift();
+            }
+        }
+        
+        // Start the game
+        initAudio(); // Initialize audio system
+        
+        // Add click-to-start functionality for audio
+        let gameStarted = false;
+        
+        function startGame() {
+            if (!gameStarted) {
+                gameStarted = true;
+                playBackgroundMusic(); // Start thrilling background music
+                gameLoop();
+                console.log("🎮 Tiger Shooter initialized!");
+                console.log("Master Clark's game is ready!");
+                console.log("🐯 Tiger Bomb is at bottom left");
+                console.log("👹 Purple demons spawn from top to bottom!");
+                console.log("🏔️ Snowy mountains for better visibility!");
+                console.log("🎯 Defeat 10 demons to win!");
+                console.log("🎆 Victory fireworks celebration!");
+                console.log("🎵 Thrilling background music playing!");
+                console.log("🔊 Sound effects enabled!");
+            }
+        }
+        
+        // Show start screen
+        function showStartScreen() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#FF6B35';
+            ctx.font = '48px Arial';
+            ctx.fillText('🐯 TIGER SHOOTER 🎮', 200, 200);
+            
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '24px Arial';
+            ctx.fillText('Click to Start Game!', 300, 300);
+            ctx.fillText('🎵 With Thrilling Music!', 280, 350);
+            ctx.fillText('🔊 Sound Effects Enabled!', 270, 400);
+            
+            // Add click listener
+            canvas.addEventListener('click', startGame, { once: true });
+        }
+        
+        // Show start screen initially
+        showStartScreen();
+    </script>
+</body>
+</html> 

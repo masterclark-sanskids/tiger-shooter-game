@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Clark's Game Collection</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .game-card {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 15px;
+            text-decoration: none;
+            display: block;
+            transition: transform 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .game-description {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+        
+        .emoji {
+                font-size: 2em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+        <div class="container">
+        <h1>🎮 Master Clark's Game Collection</h1>
+        
+        <a href="tiger-shooter.html" class="game-card">
+            <div class="emoji">🐯</div>
+            <div class="game-title">Tiger Shooter</div>
+            <div class="game-description">
+                An epic shooting game where you control a powerful tiger! 
+                Use arrow keys to move, spacebar to jump, and Z to shoot bananas at enemies.
+            </div>
+        </a>
+        
+        <a href="superhero-adventure.html" class="game-card">
+            <div class="emoji">🦸</div>
+            <div class="game-title">Superhero Adventure</div>
+            <div class="game-description">
+                Embark on a heroic journey! Navigate through challenges and save the day.
+            </div>
+        </a>
+        
+        <div style="margin-top: 30px; color: #666; font-size: 0.9em;">
+            <p>🎯 Click on any game to start playing!</p>
+            <p>🌟 All games are created by Master Clark</p>
+        </div>
+    </div>
+</body>
+</html>
